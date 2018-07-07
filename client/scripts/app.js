@@ -26,21 +26,19 @@ var app = {
     app.$roomSelect.on('change', app.handleRoomChange);
 
     // Fetch previous messages
-    app.startSpinner();
-    app.fetch(false);
+    app.fetch();
 
     // Poll for new messages
-    setInterval(function() {
-      app.fetch(true);
-    }, 3000);
+    // setInterval(function() {
+    //   app.fetch(true);
+    // }, 3000);
   },
 
   send: function(message) {
-    app.startSpinner();
 
     // POST the message to the server
     $.ajax({
-      url: 'http://127.0.0.1:3000',
+      url: app.server,
       type: 'POST',
       data: JSON.stringify(message),
       contentType: 'application/json',
@@ -57,11 +55,11 @@ var app = {
     });
   },
 
-  fetch: function(animate) {
+  fetch: function() {
     $.ajax({
-      url: 'http://127.0.0.1:3000',
+      url: app.server,
       type: 'GET',
-      data: { order: '-createdAt' },
+      // data: { order: '-createdAt' },
       success: function(data) {
         // Don't bother if we have nothing to work with
         if (!data.results || !data.results.length) { return; }
@@ -72,17 +70,13 @@ var app = {
         // Get the last message
         var mostRecentMessage = data.results[data.results.length - 1];
 
-        // Only bother updating the DOM if we have a new message
-        if (mostRecentMessage.objectId !== app.lastMessageId) {
-          // Update the UI with the fetched rooms
-          app.renderRoomList(data.results);
+      // Update the UI with the fetched rooms
+      app.renderRoomList(data.results);
 
-          // Update the UI with the fetched messages
-          app.renderMessages(data.results, animate);
+      // Update the UI with the fetched messages
+      app.renderMessages(data.results);
 
-          // Store the ID of the most recent message
-          app.lastMessageId = mostRecentMessage.objectId;
-        }
+      // Store the ID of the most recent message
       },
       error: function(error) {
         console.error('chatterbox: Failed to fetch messages', error);
@@ -94,10 +88,9 @@ var app = {
     app.$chats.html('');
   },
 
-  renderMessages: function(messages, animate) {
+  renderMessages: function(messages) {
     // Clear existing messages`
     app.clearMessages();
-    app.stopSpinner();
     if (Array.isArray(messages)) {
       // Add all fetched messages that are in our current room
       messages
@@ -109,9 +102,6 @@ var app = {
     }
 
     // Make it scroll to the top
-    if (animate) {
-      $('body').animate({scrollTop: '0px'}, 'fast');
-    }
   },
 
   renderRoomList: function(messages) {
@@ -203,7 +193,6 @@ var app = {
         app.$roomSelect.val(roomname);
       }
     } else {
-      app.startSpinner();
       // Store as undefined for empty names
       app.roomname = app.$roomSelect.val();
     }
@@ -224,13 +213,4 @@ var app = {
     event.preventDefault();
   },
 
-  startSpinner: function() {
-    $('.spinner img').show();
-    $('form input[type=submit]').attr('disabled', 'true');
-  },
-
-  stopSpinner: function() {
-    $('.spinner img').fadeOut('fast');
-    $('form input[type=submit]').attr('disabled', null);
-  }
 };
